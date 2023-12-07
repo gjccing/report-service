@@ -1,18 +1,17 @@
-import Koa from "koa";
+import Koa, { Middleware } from "koa";
 import logger from "koa-logger";
 import Router from "@koa/router";
 import dotenv from "dotenv";
 import generalErrorHandler from "./middlewares/error/general-handler";
 import zodErrorHandler from "./middlewares/error/zod-error-handler";
-// import dumpOrdersTojson from "./middlewares/dump-orders-to-json";
 
 import parseParams from "./utils/parseParams";
 import fetchAllOrders from "./utils/fetchAllOrders";
 import convertToBase64ShortCode from "./utils/convertToBase64ShortCode";
 import generateCSVStream from "./utils/generateCSVStream";
 import generateXLSXStream from "./utils/generateXLSXStream";
-import generatePDFStream from "./utils/generatePDFStream";
 import responseFile from "./utils/responseFile";
+import importScalableMiddleware from "../solution/importScalableMiddleware";
 
 dotenv.config();
 
@@ -28,11 +27,10 @@ const router = new Router();
 
 router.get("/heart-beat", (ctx) => (ctx.body = "Hello world"));
 
-router.get("/json", async (ctx) => {
-  await Promise.resolve(parseParams(ctx.query))
-    .then(fetchAllOrders)
-    .then((orders) => (ctx.body = JSON.stringify(orders)));
-});
+router.get(
+  "/json",
+  importScalableMiddleware(`/src/middlewares/dump-orders-to-json.ts`)
+);
 
 router.get("/csv", async (ctx) => {
   await Promise.resolve(parseParams(ctx.query))
@@ -58,17 +56,10 @@ router.get("/xlsx", async (ctx) => {
     );
 });
 
-router.get("/pdf", async (ctx) => {
-  await Promise.resolve(parseParams(ctx.query))
-    .then(fetchAllOrders)
-    .then(generatePDFStream)
-    .then(
-      responseFile(ctx)(
-        `${convertToBase64ShortCode(ctx.querystring)}.pdf`,
-        "application/octet-stream"
-      )
-    );
-});
+router.get(
+  "/pdf",
+  importScalableMiddleware(`/src/middlewares/dump-orders-to-pdf.ts`)
+);
 
 app.use(router.routes());
 

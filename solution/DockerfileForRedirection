@@ -1,0 +1,23 @@
+FROM node:20.8.0-alpine
+
+ARG INJECT_MODULE
+# Set a working directory
+WORKDIR /usr/src/app
+
+#COPY Folder 
+COPY package.json package.json
+COPY package-lock.json package-lock.json
+
+#node install dependencies
+RUN npm install
+
+#COPY Other Files
+COPY . .
+
+RUN ./node_modules/.bin/ts-node ./solution/make-new-entrace-point.ts
+
+#Start Up
+ENTRYPOINT ["npm", "run", "start"]
+
+# Port
+EXPOSE 3000
